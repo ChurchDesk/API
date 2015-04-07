@@ -1,0 +1,1239 @@
+FORMAT: 1A
+
+# Churchdesk API
+Welcome to *ChurchDesk* API
+
+This API is used to talk to the API gateway that agregates all ChurchDesk data.
+
+STATUS: ***WORK IN PROGRESS*** - The API will go live March the 5th, 2015
+
+##Allowed HTTPs requests:
+
+- `POST` - To create a resource
+- `PUT` - To  update a resource
+- `GET` - Get a resource or list of resources
+- `DELETE` - To delete resource
+
+## Response Formats
+ It is highly recommended that if the methods below are followed. It is even more recommended if the Accept header is used.
+- `json` - Needs either .json at the end of the url or Accept header 'application/json'
+
+##Server Responses
+
+- 200 `OK` - the request was successful (some API calls may return 201 instead).
+- 201 `Created` - the request was successful and a resource was created.
+- 204 `No Content` - the request was successful but there is no representation to return (i.e. the response is empty).
+- 400 `Bad Request` - the request could not be understood or was missing required parameters.
+- 401 `Unauthorized` - authentication failed or user doesn't have permissions for requested operation.
+- 403 `Forbidden` - access denied.
+- 404 `Not Found` - resource was not found.
+- 405 `Method Not Allowed` - requested method is not supported for resource.
+- 429 `Too Many Requests` - exceeded KirkeWeb API limits. Pause requests, wait up to one minute, and try again.
+
+##Encoding
+
+All endpoints accept and use UTF-8 encoding
+
+##Dates
+
+All dates will be in ISO-8601 format in UTC timezone.
+
+# Group User
+
+## Login [/oauth/v2/token?client_id={client_id}&client_secret={client_secret}&grant_type=password&username={username}&password={password}]
+Login user to the system.
+
+## Login response attributes
+- access_token - (string) the access token is how your requrests are granted access, you will need to send it with all requests.
+- expires_in - (int) time in seconds after which your token is expired, you keen keep track of this value along with when you logged in to manage you token refresh.
+- refresh_token - (string) the refresh token, you will use this to get a new access token other wise you will have to relogin.
+
+
++ Parameters
+    + client_id (string) ... *client_id* the client id is a static token you will recieve from Churchdesk, it is different for iPhone and Android.
+    + client_secret (string) ... *client_secret* the client secret is a static token you will recieve from Churchdesk, it is different for iPhone and Android.
+    + username (string) ... *username* the user email.
+    + password (string) ... *password* the user password.
+    
+    
+### Login [GET]
++ Response 200
+
+        {
+            "access_token":"ZjJkNmQ5MTU1YjAyN2I1MzI1OTRiZmE4Nzk1MzBjNzA5MDA2MzM4NGIzZDI3MzYxNWY1ZjA2YTgwZDE5MDk5NA",
+            "expires_in":3600,
+            "token_type":"bearer",
+            "scope":"user",
+            "refresh_token":"NTI1OGIyMzI4ZTIzNzY2NjdhM2I5MTMxNWFlYmQ5ZWY5ZGIyYmNiNTg1OWI2MWI0ZTkxMWE2NDQwNzNjMWZmMg"
+        }
+   
+
+## Refresh access token [/oauth/v2/token?client_id={client_id}&client_secret={client_secret}&grant_type=refresh_token&refresh_token={refresh_token}]
+Refresh the access token, remember that you will get a new refresh token in the process.
+
++ Parameters
+    + client_id (string) ... *client_id* the client id is a static token you will recieve from Churchdesk, it is different for iPhone and Android.
+    + client_secret (string) ... *client_secret* the client secret is a static token you will recieve from Churchdesk, it is different for iPhone and Android.
+    + refresh_token (string) ... *refresh_token* the refresh token you have from the login or the last refresh operation.
+
+### Refresh Access Token [GET]
+
++ Response 200
+
+        {
+            "access_token":"yuYrRtzPEJIwqdexnWCihKRLnROuMJ1tfqJm7ICWCuZS9NjI8rWqnqop6Qn1n0K1TtNXODoedQ0qsPeJEsesBF",
+            "expires_in":3600,
+            "token_type":"bearer",
+            "scope":"user",
+            "refresh_token":"sZfoSHbILg6VbBqcZmQFGhGob48053QqzS9hXsxrnLoqFH3mIDGnh20IYVn8jjmrf6N5DGccQ74bTUgdcQ74b"
+        }
+
+## Access Token [/oauth/v2/token?client_id={client_id}&client_secret={client_secret}&grant_type=client_credentials]
+The password reset endpoint requires an access token which can be retrieved using the end point below. No user is involved in this case so we use the client_credentials instead.
++ Parameters
+    + client_id (string) ... *client_id* the client id is a static token you will recieve from Churchdesk, it is different for iPhone and Android.
+    + client_secret (string) ... *client_secret* the client secret is a static token you will recieve from Churchdesk, it is different for iPhone and Android.
+
+### Access Token [GET]
++ Response 200
+
+        {
+            "access_token": "ZGE1ZDg5ODQyNWI4MWIyZjE4NTI1Mjg2YTM0MWM3OTkyMjBkMGYyMTM3NGUxNDU4ZmMwMDA2ZWM1ZWVlYTlmOA",
+            "expires_in": 3600,
+            "token_type": "bearer",
+            "scope": "user"
+        }
+
+## Password Reset [/api/v1/users/password-reset?access_token={access_token}]
+You have to check for the boolean 'true' in result to know that the email was sent.
+
++ Parameters
+    + access_token (string) ... *access_token* the access token obtained using the client_credentials grant type from above.
+    
+### Password Reset [POST]
++ Request (application/x-www-form-urlencoded)
+ 
+   + Body
+    
+            {
+                "username": "kim@gmail.com",
+            }
+            
++ Response 200
+    
+        true
+
+## Current user [/api/v1/users?access_token={access_token}]
+
+
+##List of user attributes:
+- name - (string, `Jens Henrik Jensen`) the user real name.
+- picture - (string) a url to the user picture, always set (can be a dummy picture provided by churchdesk).
+- permissions: (array) associative array with permission name as key and a boolean granted or not as value.
+- sites - (array) list of all the sites the user belong to as an associative array with site name as a key and the user id on each site as a value.
+
++ Parameters
+    + access_token (string) ... *access_token* the access token you obtained by the login or the token refresh.
+    
+### Current User [GET]
++ Response 200
+
+        {
+            "name": "Kim Yong",
+            "picture": "http://goo.gl/JLM3TB",
+            "sites": [
+                {
+                    "userId": 12,
+                    "siteName": "Vesterbro Sogn",
+                    "attendenceEnabled": true,
+                    "site": "http://vesterbro.kw01.net", 
+                    "permissions": {
+                        "canCreateEvent": true,
+                        "canCreateMessage": true,
+                        "canDoubleBook": false
+                    }
+                },
+                {
+                    "userId": 25,
+                    "siteName": "Haderslev Domsogn",
+                    "attendenceEnabled": false,
+                    "site": "https://hado.kw01.net",
+                    "permissions": {
+                        "canCreateEvent": true,
+                        "canCreateMessage": true,
+                        "canDoubleBook": false
+                    }
+                },
+                {
+                    "userId": 96,
+                    "siteName": "Vor Frue Kirke i Aarhus",
+                    "site": "http://aarhusvorfrue.dk",
+                    "attendenceEnabled": true,
+                    "permissions": {
+                        "canCreateEvent": true,
+                        "canCreateMessage": true,
+                        "canDoubleBook": false
+                    }
+                }
+            ],
+        }
+        
+        
+# Group Dictionaries
+Endpoints that provides Event categories, Groups, Users and Resources.
+        
+
+
+##Dictionary [/api/v1/dictionaries?access_token={access_token}]
+
++ Parameters
+    + access_token (string) ... *access_token* the access token you obtained by the login or the token refresh.
+
+### List all [GET]
++ Response 200 (application/json)
+
+        {
+            "eventCategories": [
+                {
+                    "id": 11, 
+                    "name": "Børnegudstjeneste",
+                    "site": "http://vesterbro.kw01.net",
+                    "color": "#dd5c3a" 
+                },
+                {
+                    "id": 13, 
+                    "name": "Gudstjeneste",
+                    "site": "http://hado.kw01.net",
+                    "color": "#b05623" 
+                },
+                {
+                    "id": 15, 
+                    "name": "Vielse",
+                    "site": "http://vesterbro.kw01.net",
+                    "color": "#af583f" 
+                }
+            ],
+            "resources": [
+                 {
+                    "id": 13, 
+                    "name": "Kirkehuset",
+                    "site": "http://vesterbro.kw01.net",
+                    "color": "#dd5c3a" 
+                },
+                {
+                    "id": 18, 
+                    "name": "Ø Sct Andreas Kirke",
+                    "site": "http://hado.kw01.net",
+                    "color": "#b05623" 
+                },
+                {
+                    "id": 65, 
+                    "name": "Store sal",
+                    "site": "http://vesterbro.kw01.net",
+                    "color": "#af583f" 
+                }
+            ],
+            "groups": [
+                {
+                    "id": 27, 
+                    "name": "Vesterbro Sogn",
+                    "site": "http://vesterbro.kw01.net",
+                    "canCreateEvent": true,
+                },
+                {
+                    "id": 27, 
+                    "name": "Vesterbro Sogn",
+                    "site": "http://hado.kw01.net",
+                    "canCreateEvent": true,
+                }
+            ],
+            "users": [
+                {
+                    "id": 2,
+                    "name": "Matthias Haamann",
+                    "site": "http://vesterbro.kw01.net",
+                    "picture": "http://goo.gl/JLM3TB", 
+                },
+                {
+                    "id": 7,
+                    "name": "TD Presson",
+                    "site": "http://hado.kw01.net",
+                    "picture": "http://goo.gl/JLM3TB", 
+                },
+                {
+                    "id": 12,
+                    "name": "Viktoras Svolka",
+                    "site": "http://vesterbro.kw01.net",
+                    "picture": "http://goo.gl/JLM3TB",
+                },
+                {
+                    "id": 34,
+                    "name": "Kim Yong",
+                    "site": "http://hado.kw01.net",
+                    "picture": "http://goo.gl/JLM3TB", 
+                }
+            ]
+        }
+
+# Group Holy Days
+Query for holy days in a specific year, localized per country.
+
+We will just find the user country and send the correct localized data.
+
+
+##List of attributes:
+
+- date - (string) ISO-8601 date format.
+- name - (string) name (not always set)
+
+
+## Query Holydays [/api/v1/holydays/{year}?access_token={access_token}]
+Get the list of holydays in a specific year.
+
++ Parameters
+    + year (string, `2015`) ... the year to get holydays for.
+    + access_token (string) ... the access token you obtained by the login or the token refresh.
+    
+    
+### Query [GET]
++ Response 200 (application/json)
+
+        [
+            { 
+                "name": "Juleaftensdag",
+                "date": "2015-12-24T00:00:00+000",
+            },
+            { 
+                "name": "Juledag",
+                "date": "2015-12-25T00:00:00+0000",
+            },
+            { 
+                "name": "2. Juledag",
+                "date": "2015-12-26T00:00:00+0000",
+            },
+            { 
+                "name": "Nytårsaften",
+                "date": "2015-12-31T00:00:00+0000",
+            }
+        ]
+
+## Kirkeweb Specific [/api/v1/holydays/{type}/{country}?access_token={access_token}]
+Get the list of holydays based on type and country.
+
++ Parameters
+    + type (string, `google, local`) ... the feed type either google or local.
+    + country (string, `DK, DE, GB`) ... the country (sites default country)
+    + access_token (string) ... the access token you obtained by the login or the token refresh.
+    
+    
+### Query Holyday [GET]
++ Response 200 (application/json)
+
+        [
+            { 
+                "title": "Juleaftensdag",
+                "date": "2015-12-24T00:00:00+000",
+                "link": http://www.bayern-evangelisch.de/www/liturgischer_kalender/31.12.2019
+            },
+            { 
+                "title": "Juledag",
+                "date": "2015-12-25T00:00:00+0000",
+                "link": http://www.bayern-evangelisch.de/www/liturgischer_kalender/31.12.2019
+            },
+            { 
+                "title": "2. Juledag",
+                "date": "2015-12-26T00:00:00+0000",
+                "link": http://www.bayern-evangelisch.de/www/liturgischer_kalender/31.12.2019
+            },
+            { 
+                "title": "Nytårsaften",
+                "date": "2015-12-31T00:00:00+0000",
+                "link": http://www.bayern-evangelisch.de/www/liturgischer_kalender/31.12.2019
+            }
+        ]
+        
+# Group Events
+
+## Create/Update attributes
+
+- site - (string)(required) the site to create the event at.
+- title - (string)(required)(max length 255 char) the event title .
+- startDate - (string)(required) the start date in ISO-8601 format.
+- endDate - (string)(required) the end date in ISO-8601 format.
+- allDay - (boolean) is the event all day
+- eventCategories - (array) (required) list of categories this event belong to
+- groupId - (int)(required)(max lenth of 255 char) the group id.
+- location: (string)(max length 255 char) the location of the event.
+- resources - (array) list of ids  of the booked resources by this event
+- users - (array) list of ids  of the booked users by this event.
+- person: (string)(max length 255 char) a name of the contributer to the event (priest name?)
+- price: (string)(max length 255 char) the event price.
+- publish - (boolean) is the event published.
+- internalNote - (string) internal note on this event
+- description - (string) a description to the event
+- allowDoubleBooking - (boolean) not saved to datebase, it is just a flag to skip the double booking validations.
+
+
+## Full event retrieve attributes.
+- site - (string) the site id.
+- id - (int) event id.
+- authorId - (int) the author user id.
+- groupId - (int) the group id.
+- created - (string)  ISO-8601 format of the event create date.
+- publish - (boolean) if the event is published or not.
+- visibility - (int) can be one of ( 1 => "visible on website", 2 => "visible only in group").
+- title - (string) the event title.
+- picture - (string) the picture of this event, can be empty
+- eventCategories - (array) list of categories this event belong to.
+- allDay - (boolean) is the event all day.
+- startDate - (string) the start date in ISO-8601 format.
+- endDate - (string) the end date in ISO-8601 format.
+- resources - (array) list of ids  of the booked resources by this event.
+- users - (array) list of ids  of the booked users by this event
+- description - (string) the description of this event, HTML string.
+- internalNote - (string) the internal note of the event, HTML string.
+- location: (string) the location of the event.
+- person: (string) a name of the contributer to the event.
+- price: (string) the event price.
+- response - (int) can be one of { 0 => "no answer", 1 => "yes", 2 => "no", 3 => "may be" }
+- canEdit - (boolean) can the current user edit this event.
+- canDelete - (boolean) can the current user delete this event.
+
+## Create [/api/v1/events?access_token={access_token}]
+Create and List events
+
++ Parameters
+    + access_token (string) ... the access token you obtained by the login or the token refresh.
+    
+### Create [POST]
++ Request (application/x-www-form-urlencoded)
+    + Header
+
+             "Content-Type": "application/x-www-form-urlencoded"
+            
+    + Body
+    
+            {
+                "site": "vesterbro.kw01.net",
+                "groupId": 17,
+                "title": "Lakering af sale",
+                "allDay": false,
+                "allowDoubleBooking": false,
+                "endDate": "2015-12-26T10:00:00+01:00",
+                "startDate": "2015-12-26T09:00:00+01:00",
+                "publish": true,
+                "resources": [
+                  2203,
+                  2209,
+                  2205,
+                  2208
+                ],
+                "users":  [
+                  6,
+                  22,
+                  118,
+                  48
+                ],
+                "location": "Church HQ",
+                "price": "50 dkk",
+                "person": "Viktoras Svolka",
+                "eventCategories": [
+                    1379, 
+                    2342
+                ],
+                "internalNote": "Only dev guys",
+                "description": "Come and join our special concert at Churchdesk" 
+            }
+            
++ Response 201
+    + Body
+    
+            {
+              "id": 17825,
+              "site": "vesterbro.kw01.net",
+              "type": "event"
+            }
+            
++ Response 406
+    + Body
+    
+            {
+              "error": "error text",
+              "html": false
+            }
+
+        
+## Get, Update & Delete [/api/v1/events/{eventId}?site={site}&access_token={access_token}]
+Get single event details, update an event or delete one
+
++ Parameters
+    + site (string) ... the id of the site to create the event at..
+    + eventId (int) ... the id of the event.
+    + access_token (string) ... the access token you obtained by the login or the token refresh.
+    
+
+### Update [PUT]
++ Request (application/x-www-form-urlencoded)
+    + Header
+
+             "Content-Type": "application/x-www-form-urlencoded"
+            
+    + Body
+    
+            {
+                "groupId": 17,
+                "title": "Lakering af sale 2",
+                "allDay": false,
+                "allowDoubleBooking": false,
+                "startDate": "2015-12-26T09:00:00+01:00",
+                "endDate": "2015-12-26T10:00:00+01:00",
+                "publish": true,
+                "resources": [
+                  2203,
+                  2209,
+                  2205,
+                  2208
+                ],
+                "users":  [
+                  6,
+                  22,
+                  118,
+                  48
+                ],
+                "location": "Church HQ",
+                "price": "50 dkk",
+                "person": "Vikto",
+                "eventCategories": [
+                    1379, 
+                    2342
+                ]
+                "internalNote": "Only dev guys",
+                "description": "Come and join our special concert at Churchdesk" 
+            }
+            
++ Response 204
+
++ Response 406
+    + Body
+    
+            {
+              "error": "error text",
+              "html": false
+            }
+
+
+### single event details [GET]
++ Response 200 (application/json)
+
+            {
+                "site": "hado.kw01.net",
+                "id": 17825,
+                "authorId": 1,
+                "groupId": 17,
+                "created": "2015-12-21T03:22:35+00:00",
+                "publish": true,
+                "title": "Lakering af sale",
+                "picture": "http://churchofindia-cipbc.webs.com/A%20decorated%20and%20newly%20painted%20Christ%20Church%20at%20Lucknow%20-%202.jpg",
+                "eventCategories": [
+                    1379, 
+                    2342
+                ],
+                "allDay": false,
+                "startDate": "2015-12-26T09:00:00+01:00",
+                "endDate": "2015-12-26T10:00:00+01:00",
+                "resources": [
+                    2203,
+                    2209
+                ],
+                "users": [
+                    7,
+                    22,
+                    118,
+                    48
+                ],
+                "description": "Some random event description",
+                "internalNote": "We *SHOULD* discuss this ASAP",
+                "location": "Church HQ",
+                "price": "60 dkk",
+                "person": "Viktoras Svolka",
+                "attendenceStatus": 0,
+                "canEdit": true,
+                "canDelete": true,
+                "attendenceStatus": [
+                    {
+                        "user": 7,
+                        "status": 1
+                    },
+                    {
+                        "user": 22,
+                        "status": 2
+                    },
+                    {
+                        "user": 118,
+                        "status": 3
+                    },
+                    {
+                        "user": 48,
+                        "status": 0
+                    }
+                ]
+            }
+        
+### Delete [DELETE]
++ Response 204
+
+
+## Query Events [/api/v1/events/{year}/{month}?access_token={access_token}]
+List all events current user has access to in a specific month
+
+
+## Event listing attributes.
+- id - (int) event id.
+- title - (string) the event title.
+- eventCategoryId - (int) id of the event cateogry (required).
+- allDay - (boolean) is the event all day.
+- startDate - (string) the start date in ISO-8601 format.
+- endDate - (string) the end date in ISO-8601 format.
+- users - (array) list of ids  of the booked users by this event
+- location: (string) the location of the event.
+
+
++ Parameters
+    + year (string, `2015`) ... the year to get events for
+    + month (string, `2`) ... the month to get events for
+    + access_token (string) ... the access token you obtained by the login or the token refresh.
+
+
+    
+### Retrieve Data [GET]
++ Response 200 (application/json)
+
+             [
+                {
+                    "id": 10135,
+                    "site": "http://vesterbro.kw01.net",
+                    "title": "Højmesse",
+                    "allDay": true,
+                    "startDate": "2014-08-15T15:52:01+0000",
+                    "endDate":"2014-08-17T15:52:01+0000",
+                    "location": "Kirke HQ",
+                    "users": [ 3, 87],
+                    "eventCategoryId": [90],
+                },
+                {
+                    "id": 9947,
+                    "site": "http://vesterbro.kw01.net",
+                    "title": "Konfirmandforberedelse TMR",
+                    "allDay": true,
+                    "startDate": "2014-08-15T15:52:01+0000",
+                    "endDate":"2014-08-17T15:52:01+0000",
+                    "location": "",
+                    "users": [ 7, 93 ],
+                    "eventCategoryId": [90],
+                },
+                {
+                    "id": 231,
+                    "site": "http://aarhusvorfrue.dk",
+                    "title": "Babysalmesang - tre hold",
+                    "allDay": true,
+                    "startDate": "2014-08-15T15:52:01+0000",
+                    "endDate":"2014-08-17T15:52:01+0000",
+                    "location": "",
+                    "users": [ 3, 87],
+                    "eventCategoryId": [90],
+                },
+                {
+                    "id": 22,
+                    "site": "http://aarhusvorfrue.dk",
+                    "title": "Rengøring",
+                    "allDay": true,
+                    "startDate": "2014-08-15T15:52:01+0000",
+                    "endDate":"2014-08-17T15:52:01+0000",
+                    "location": "Store Sale",
+                    "users": [ 7, 93 ],
+                    "eventCategoryId": [90],
+                },
+                {
+                    "id": 231,
+                    "site": "http://hado.kw01.net",
+                    "title": "Babysalmesang - tre hold",
+                    "allDay": true,
+                    "startDate": "2014-08-15T15:52:01+0000",
+                    "endDate":"2014-08-17T15:52:01+0000",
+                    "location": "",
+                    "users": [ 3, 87],
+                    "eventCategoryId": [90],
+                },
+                {
+                    "id": 22,
+                    "site": "http://hado.kw01.net",
+                    "title": "Rengøring",
+                    "allDay": true,
+                    "startDate": "2014-08-15T15:52:01+0000",
+                    "endDate":"2014-08-17T15:52:01+0000",
+                    "location": "Store Sale",
+                    "users": [ 7, 93 ],
+                    "eventCategoryId": [90],
+                }
+            ]
+        
+## Respond to Event [/api/v1/events/respond/{eventId}/{response}?site={site}&access_token={access_token}]
+Respond to a specific event or override an existing response. assumes the current user at all time.
+Will throw an error if the attendence system is disabled.
+
++ Parameters
+    + eventId (int) ... *eventId* the id of the event.
+    + response (int) ...*response* can be one of { 1 => "yes", 2 => "no", 3 => "may be" }
+    + site (string) ... *site* the id of the site to create the event at..
+    + access_token (string) ... *access_token* the access token you obtained by the login or the token refresh.
+
+
+    
+### Respond to Event [POST]
++ Response 200 (application/json)
+
+
+# Group Invites
+List x upcoming event invites for this user (even the ones he responded to). note that not all sites have the attendece system enabled.
+
+##List of attributes:
+
+- id - (int) event id.
+- title - (string) the event title.
+- eventCategoryId - (int) id of the event cateogry (required).
+- allDay - (boolean) is the event all day.
+- startDate - (string) the start date in ISO-8601 format.
+- endDate - (string) the end date in ISO-8601 format.
+- changed - (string) last updated date in ISO-8601 format.
+- location - (string) the event location.
+- response - (int) (int) can be one of 4 values { 0 => NO_ANSWER, 1 => YES, 2 => NO, 3 => MAY_BE }
+
+ 
+## List [/api/v1/my-invites?access_token={access_token}]
+List all future notifications from this point in time.
+
++ Parameters
+    + access_token (string) ... *access_token* the access token you obtained by the login or the token refresh.
+
+### Retrieve Data [GET]
++ Response 200 (application/json)
+ 
+        [
+            {
+                "id": 132,
+                "site": "http://aarhusvorfrue.dk",
+                "title": "Morgenandagt",
+                "eventCategoryId": 1627,
+                "allDay": false,
+                "startDate": "2014-08-15T15:52:01+0000",
+                "endDate":"2014-08-17T15:52:01+0000",
+                "changed": "2014-08-13T12:52:01+0000",
+                "location": "Kirkeweb HQ",
+                "response": 1,
+                "invitedBy": 4
+            },
+            {
+                "id": 1098,
+                "site": "http://hado.kw01.net",
+                "title": "Højmesse",
+                "eventCategoryId": 32,
+                "allDay": false,
+                "startDate": "2014-09-15T15:52:01+0000",
+                "endDate":"2014-09-17T15:52:01+0000",
+                "changed": "2014-05-13T12:52:01+0000",
+                "location": "",
+                "response": 0,
+                "invitedBy": 23
+            }
+        ]
+
+# Group Message
+
+## Create message attributes
+- site - (string) the site to create the message at.
+- groupId - (int) the group id.
+- title - (string) the message title.
+- body - (string) the message body.
+
+## Attributes of message index
+- id - (int) the message id.
+- site - (int) the site unique identifier
+- authorId - (int) the author user id.
+- groupId - (int) the group id.
+- changed - (string)  ISO-8601 format of the message last changed date (created or updated).
+- lastCommentAuthorId - (int) the id of the user who last commented on the message (can be empty)
+- lastCommentDate - (string) ISO-8601 time string of the last response to the message (can be empty)
+- title - (string) the message title.
+- messageLine - (string) first line of the last comment, first line of the message.
+- lastActivity - (string) the date of the last activity on this message (last comment or the last modification date to the message itself).
+- read - (boolean) if the message has been read or not.
+- canEdit - (boolean) can the current user edit this message.
+- canDelete - (boolean) can the current user delete this message
+
+
+## Create [/api/v1/messages?access_token={access_token}]
+Use this endpoint to create a message
+
++ Parameters
+    + access_token (string) ... *access_token* the access token you obtained by the login or the token refresh.
+
+### Create [POST]
++ Request (application/x-www-form-urlencoded)
+    + Header
+
+             "Content-Type": "application/x-www-form-urlencoded"
+            
+    + Body
+    
+            {
+                "site": "vesterbro.kw01.net",
+                "groupId": 4,
+                "title": "Merry Christmas",
+                "body": "Merry christmas everyone.",
+            }
+            
++ Response 201
+    + Body
+    
+            {
+              "id": 2321,
+              "site": "vesterbro.kw01.net",
+              "type": "message"
+            }
+
+## Index & Search [/api/v1/messages?start_date={start_date}&limit={limit}&query={query}&access_token={access_token}]
+Use this endpoint to list/search messages.
+
++ Parameters
+    + start_date (optional, string, `2015-03-05T13:22:00+0000`) ... *start_date* a time point to retrieve messages from. Oldest messages will be sent if this paramters left empty.
+    + limit (optional, int, `25`) ...*limit* the number of items per page to send back (default to 20).
+    + query (optional, string, `dinn`) ... *query* string to search with among other messages, it will look at message title, body and comments.
+    + access_token (string) ... *access_token* the access token you obtained by the login or the token refresh.
+
+### Index [GET]
++ Response 200 (application/json)
+
+        [
+            {
+                "id": 95,
+                "site": "http://vesterbrosogn.dk",
+                "authorId": 7,
+                "groupId": 4,
+                "changed": "2014-08-15T15:52:01+0000",
+                "lastCommentAuthorId": 1,
+                "lastCommentDate": "2014-08-15T15:52:01+0000",
+                "commentCount": 7,
+                "title": "Merry Christmas",
+                "lastActivity":  "2014-08-15T15:52:01+0000"
+                "messageLine": "You guys know about the christimas dinner at Jens's",
+                "read": false,
+                "canEdit": true,
+                "canDelete": true
+            },
+            {
+               "id": 95,
+                "site": "http://vesterbrosogn.dk",
+                "authorId": 7,
+                "groupId": 4,
+                "changed": "2014-08-15T15:52:01+0000",
+                "lastCommentAuthorId": 1,
+                "lastCommentDate": "2014-08-15T15:52:01+0000",
+                "commentCount": 7,
+                "title": "Merry Christmas",
+                "lastActivity":  "2014-08-15T15:52:01+0000"
+                "messageLine": "You guys know about the christimas dinner at Jens's",
+                "read": false,
+                "canEdit": true,
+                "canDelete": true
+            },
+            {
+               "id": 95,
+                "site": "http://vesterbrosogn.dk",
+                "authorId": 7,
+                "groupId": 4,
+                "changed": "2014-08-15T15:52:01+0000",
+                "lastCommentAuthorId": 1,
+                "lastCommentDate": "2014-08-15T15:52:01+0000",
+                "commentCount": 7,
+                "title": "Merry Christmas",
+                "lastActivity":  "2014-08-15T15:52:01+0000"
+                "messageLine": "You guys know about the christimas dinner at Jens's",
+                "read": false,
+                "canEdit": true,
+                "canDelete": true
+            }
+        ]
+
+
+
+## Unread messages [/api/v1/messages/unread?access_token={access_token}]
+Use this endpoint to list the latest 20 unread messages.
+
+## Attributes of unread message index 
+Same as message index endpoint.
+- id - (int) the message id.
+- authorId - (int) the author user id.
+- groupId - (int) the group id.
+- changed - (string)  ISO-8601 format of the message last changed date (created or updated).
+- lastCommentAuthorId - (int) the id of the user who last commented on the message (can be empty)
+- lastCommentDate - (string) ISO-8601 time string of the last response to the message (can be empty)
+- title - (string) the message title.
+- messageLine - (string) first line of the last comment, first line of the message.
+- lastActivity - (string) the date of the last activity on this message (last comment or the last modification date to the message itself).
+- read - (boolean) if the message has been read or not (will always be set to false here).
+- canEdit - (boolean) can the current user edit this message.
+- canDelete - (boolean) can the current user delete this message
+
++ Parameters
+    + access_token (string) ... *access_token* the access token you obtained by the login or the token refresh.
+
+### Index [GET]
++ Response 200 (application/json)
+
+        [
+            {
+                 "id": 95,
+                "site": "http://vesterbrosogn.dk",
+                "authorId": 7,
+                "groupId": 4,
+                "changed": "2014-08-15T15:52:01+0000",
+                "lastCommentAuthorId": 1,
+                "lastCommentDate": "2014-08-15T15:52:01+0000",
+                "commentCount": 7,
+                "title": "Merry Christmas",
+                "lastActivity":  "2014-08-15T15:52:01+0000",
+                "messageLine": "You guys know about the christimas dinner at Jens's",
+                "read": false,
+                "canEdit": true,
+                "canDelete": true
+            }
+        ]
+
+
+## Mark as read [/api/v1/messages/{message_id}/mark-as-read?site={site}&access_token={access_token}]
+Mark a message as read.
+
+### Mark [POST]
++ Request (application/x-www-form-urlencoded)
+    + Header
+
+             "Content-Type": "application/x-www-form-urlencoded"
+            
++ Response 200
+
+        
+## Retrieve, Update & Delete [/api/v1/messages/{message_id}?site={site}&access_token={access_token}]
+Retrieve, Update a message or delete one
+
+##Retrieve Message attributes::
+- id - (int) the message id.
+- authorId - (int) the author user id.
+- groupId - (int) the group id.
+- changed - (string)  ISO-8601 format of the message last changed date (created or updated).
+- lastCommentAuthorId - (int) the id of the user who last commented on the message (can be empty)
+- lastCommentDate - (string) ISO-8601 time string of the last response to the message (can be empty)
+- title - (string) the message title.
+- body - (string) the message body.
+- comments - (array) all comment respones for this message.
+- canEdit - (boolean) can the current user edit this message.
+- canDelete - (boolean) can the current user delete this message.
+
+## Comment attributes.
+- id - (int) comment id.
+- authorId - (int) the author user id.
+- authorName - (String) the authorname if he was anonmoys (authorId was 0)
+- changed - (string)  ISO-8601 format of the comment last changed date (created or updated).
+- body - (string) the comment body
+- canEdit - (boolean) can the current user edit this comment
+- canDelete - (boolean) can the current user delete this comment
+
++ Parameters
+    + message_id (int, `12`) ... *message_id* the id of the message to update.
+    + site (string, `https://site4.kw01.net`) ... *siteId* the id of the site to create the event at.
+    + access_token (string) ... *access_token* the access token you obtained by the login or the token refresh.
+    
+### Retrieve [GET]
++ Response 200 (application/json)
+
+            {
+                "id": 95,
+                "site": "vesterbro.kw01.net",
+                "authorId": 7,
+                "groupId": 4,
+                "changed": "2014-08-15T15:52:01+0000",
+                "lastCommentAuthorId": 1,
+                "lastCommentDate": "2014-08-15T15:52:01+0000",
+                "commentCount": 7,
+                "title": "Merry Christmas",
+                "body": "Merry christmas everyone. the vacation",
+                "comments": [
+                    {
+                        "id": 43,
+                        "site": "vesterbro.kw01.net",
+                        "authorId": 6,
+                        "authorName": "",
+                        "created": "2014-08-15T15:52:01+0000",
+                        "targetId": 95,
+                        "Body": "Merry christmas",
+                        "canEdit": true,
+                        "canDelete": true
+                    },
+                    {
+                        "id": 44,
+                        "site": "vesterbro.kw01.net",
+                        "authorId": 7,
+                        "authorName": "",
+                        "created": "2014-08-15T15:54:01+0000",
+                        "targetId": 95,
+                        "Body": "Merry christmas Matthias",
+                        "canEdit": true,
+                        "canDelete": true
+                    },
+                    {
+                        "id": 45,
+                        "site": "vesterbro.kw01.net",
+                        "authorId": 9,
+                        "authorName": "",
+                        "created": "2014-08-15T15:57:01+0000",
+                        "targetId": 95,
+                        "Body": "You guys know about the christimas dinner at Jens's",
+                        "canEdit": false,
+                        "canDelete": false
+                    },
+                    {
+                        "id": 46,
+                        "site": "vesterbro.kw01.net",
+                        "authorId": 1,
+                        "authorName": "",
+                        "created": "2014-08-15T15:59:01+0000",
+                        "targetId": 95,
+                        "Body": "Get back to work all of you. and why did no body invite me to this dinner ?",
+                        "canEdit": true,
+                        "canDelete": true
+                    },
+                    {
+                        "id": 47,
+                        "site": "vesterbro.kw01.net",
+                        "authorId": 7,
+                        "authorName": "",
+                        "created": "2014-08-15T16:12:01+0000",
+                        "targetId": 95,
+                        "Body": "@VS probably because of comments like this !!!",
+                        "canEdit": true,
+                        "canDelete": true
+                    },
+                    {
+                        "id": 48,
+                        "site": "vesterbro.kw01.net",
+                        "authorId": 1,
+                        "authorName": "",
+                        "created": "2014-08-15T16:45:01+0000",
+                        "targetId": 95,
+                        "Body": "@BC .. YOU ARE FIRED ...",
+                        "canEdit": true,
+                        "canDelete": true
+                    },
+                    {
+                        "id": 49,
+                        "site": "vesterbro.kw01.net",
+                        "authorId": 1,
+                        "authorName": "",
+                        "created": "2014-08-15T16:53:01+0000",
+                        "targetId": 95,
+                        "Body": "oh .. and merry christmas everyone",
+                        "canEdit": true,
+                        "canDelete": true
+                    }
+                ],
+                "read": true,
+                "canEdit": true,
+                "canDelete": true
+            }
+
+
+### Update [PUT]
++ Request (application/x-www-form-urlencoded)
+    + Body
+    
+            {
+                "groupId": 4,
+                "title": "Merry Christmas",
+                "body": "Merry christmas everyone. Enjoy the vacation",
+            }
+            
++ Response 204
+
+        
+### Delete [DELETE]
++ Request (application/x-www-form-urlencoded)
+            
++ Response 204
+
+
+
+# Group Comments
+
+
+## Create [/api/v1/comments?access_token={access_token}]
+Create comments
+
+## Comment create attributes.
+- site - (string) the site where you are creating the comment.ged date (created or updated).
+- body - (string) the comment body
+- targetId - (int) the entity which you are commenting to (the messageId for example).
+
++ Parameters
+    + access_token (string) ... *access_token* the access token you obtained by the login or the token refresh.
+    
+### Create [POST]
++ Request (application/x-www-form-urlencoded)
+    + Body
+    
+            {
+                "site": "hado.kw01.net",
+                "body": "We need to buy new toilet papers",
+                "targetId": 10539
+            }
+            
++ Response 201
+    + Body
+    
+            {
+              "id": 1232,
+              "site": "hado.kw01.net",
+              "type": "comment"
+            }
+ 
+        
+
+## Update, Delete [/api/v1/comments/{comment_id}?site={site}&access_token={access_token}]
+Update and delete comments
+
+## Comment update attributes.
+- body - (string) the comment body
+
++ Parameters
+    + comment_id (int, `46`) ... *comment_id* the id of the comment.
+    + site (string, `https://site4.kw01.net`) ... *siteId* the id of the site to create the event at.
+    + access_token (string) ... *access_token* the access token you obtained by the login or the token refresh.
+    
+
+### Update [PUT]
++ Request (application/x-www-form-urlencoded)
+    + Body
+    
+            {
+                "body": "We need to buy new toilet papers and towels",
+            }
+            
++ Response 204
+        
+### Delete [DELETE]
++ Request (application/x-www-form-urlencoded)
+            
++ Response 204
+
+# Group Push Notification
+
+## Notification types
+- bookingCreated - Receive notifications when you are booked.
+- bookingUpdated - Receive notifications when events are updated if you are booked
+- bookingCanceled - Receive notifications when events are deleted if you was booked
+- message - Receive notifications when an group message is created or commented
+
+## Register Token [/api/v1/push-notifications/register-token/{device_token}/{device_type}/{env}?access_token={access_token}]
+Register the device token for the current user.
+
++ Parameters
+    + device_token (string) ... *device_token* the device token for the current user
+    + device_type (string, `android`)  ... *device_type* the device type whether ios or android
+    + access_token (string) ... *access_token* the access token you obtained by the login or the token refresh.
+    + env (string, `ìnhouse, dev, prod`) ... *env* the environment the token belongs.
+
+### Register [POST]
++ Request (application/x-www-form-urlencoded)
+
++ Response 201
+
+## Delete Token [/api/v1/push-notifications/delete-token/{device_token}?access_token={access_token}]
+Delete the device token for the current user.
+
++ Parameters
+    + device_token (string) ... *device_token* the device token for the current user
+    + access_token (string) ... *access_token* the access token you obtained by the login or the token refresh.
+   
+### Delete [DELETE]
++ Request (application/x-www-form-urlencoded)
+
++ Response 204
+
+## Notification Settings [/api/v1/push-notifications/settings?access_token={access_token}]
+Store user wishes for what sort of notification to receive on his device.
+
+## Notification setting attributes
+- bookingUpdated - (string) receive notification if the user that is booked on is updated
+- bookingCanceled - (string) receive notification if the user that is booked on is deleted
+- bookingCreated - (string) receive notification if booked on to an event
+- message - (string) receive notification if new activity in group message that the user belongs
+
+### Save Settings [POST]
++ Request (application/x-www-form-urlencoded)
+    + Body 
+    
+            {
+                "bookingUpdated": true,
+                "bookingCanceled": false,
+                "bookingCreated": true,
+                "message": false
+            }
+
++ Response 200
+
+### Get Settings [GET]
++ Response 200 (application/json)
+
+        {
+            "bookingUpdated": true,
+            "bookingCanceled": false,
+            "bookingCreated": true,
+            "message": false
+        }
+
+## Push [/api/v1/push-notifications/push?access_token={access_token}]
+Send a notification to a registerd user, this function is for Drupal to send notifications to the mobile app, Shape
+has nothing to do with this endpoint.
+
+Possible notifications types are: user_booked, booking_updated, booked_event_deleted, message_updated
+
+### Push [POST]
++ Request (application/x-www-form-urlencoded)
+    + Body
+    
+            {
+                "targetUser": 23,
+                "notificationType": "bookingUpdate",
+                "message": "Øvning is updated",
+                "identifier": {
+                    "id": 1823,
+                    "type": "event",
+                    "site": "vesterbro.kw01.net"
+                }
+            }
+            
++ Response 200
+
++ Request (application/x-www-form-urlencoded)
+    + Body
+    
+            {
+                "targetUser": 7,
+                "notificationType": "message",
+                "message": "Tomas commented on 'Christmas dinner'",
+                "identifier": {
+                    "id": 21,
+                    "type": "message",
+                    "site": "vesterbro.kw01.net"
+                }
+            }
+            
++ Response 200
